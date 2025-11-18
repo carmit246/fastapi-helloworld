@@ -1,0 +1,193 @@
+# Default values for fastapi-helloworld
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# Number of replicas
+replicaCount: 1
+
+image:
+  # Image repository (ECR, Docker Hub, GHCR, etc.)
+  repository: YOUR_ACCOUNT_ID.dkr.ecr.eu-west-1.amazonaws.com/fastapi-helloworld
+  # Image pull policy
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion
+  tag: "1.0.0"
+
+# Image pull secrets for private registries
+imagePullSecrets: []
+  # - name: ecr-secret
+  # - name: dockerhub-secret
+
+# Override the name
+nameOverride: ""
+fullnameOverride: ""
+
+# Service account settings
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: false
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use
+  name: ""
+
+# Pod annotations
+podAnnotations: {}
+
+# Pod security context
+podSecurityContext: {}
+  # fsGroup: 2000
+
+# Container security context
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+# Service configuration
+service:
+  type: ClusterIP  # ClusterIP for internal backend services
+  port: 50000
+  targetPort: 5000
+  # Optional: NodePort (if type is NodePort)
+  # nodePort: 30080
+  annotations: {}
+    # For AWS Load Balancer (if needed for direct backend access)
+    # service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+    # service.beta.kubernetes.io/aws-load-balancer-internal: "true"
+
+# Ingress configuration
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+    # kubernetes.io/ingress.class: nginx
+    # cert-manager.io/cluster-issuer: letsencrypt-prod
+  hosts:
+    - host: fastapi.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+  #  - secretName: fastapi-tls
+  #    hosts:
+  #      - fastapi.example.com
+
+# Resource limits and requests
+resources:
+  limits:
+    memory: 100Mi
+  requests:
+    cpu: 100m
+    memory: 50Mi
+
+# Autoscaling configuration
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+
+# Node selector
+nodeSelector: {}
+
+# Tolerations
+tolerations: []
+
+# Affinity rules
+affinity: {}
+
+# Liveness probe (checks if app is alive)
+livenessProbe:
+  enabled: true
+  httpGet:
+    path: /docs  # FastAPI auto-generated docs endpoint
+    port: http
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  timeoutSeconds: 5
+  successThreshold: 1
+  failureThreshold: 3
+
+# Readiness probe (checks if app is ready to serve traffic)
+readinessProbe:
+  enabled: true
+  httpGet:
+    path: /docs  # Use /docs or create a dedicated /health endpoint
+    port: http
+  initialDelaySeconds: 10
+  periodSeconds: 5
+  timeoutSeconds: 3
+  successThreshold: 1
+  failureThreshold: 3
+
+# Startup probe (for slow-starting containers)
+startupProbe:
+  enabled: false
+  httpGet:
+    path: /docs
+    port: http
+  initialDelaySeconds: 0
+  periodSeconds: 10
+  timeoutSeconds: 3
+  successThreshold: 1
+  failureThreshold: 30
+
+# Environment variables
+env:
+  - name: HELLOWORLD_ENV
+    value: "Hello from Helm!"
+  # - name: SECRET_KEY
+  #   valueFrom:
+  #     secretKeyRef:
+  #       name: app-secrets
+  #       key: secret-key
+
+# Environment variables from ConfigMap or Secret
+envFrom: []
+  # - configMapRef:
+  #     name: app-config
+  # - secretRef:
+  #     name: app-secrets
+
+# ConfigMap data (optional)
+configMap:
+  enabled: false
+  data: {}
+    # app.conf: |
+    #   key=value
+
+# Secret data (optional)
+secrets:
+  enabled: false
+  data: {}
+    # api-key: base64encodedvalue
+
+# Volumes
+volumes: []
+  # - name: config-volume
+  #   configMap:
+  #     name: app-config
+
+# Volume mounts
+volumeMounts: []
+  # - name: config-volume
+  #   mountPath: /app/config
+
+# Pod disruption budget
+podDisruptionBudget:
+  enabled: false
+  minAvailable: 1
+  # maxUnavailable: 1
+
+# Service monitor for Prometheus (if using Prometheus Operator)
+serviceMonitor:
+  enabled: false
+  interval: 30s
+  path: /metrics
+  labels: {}
+
