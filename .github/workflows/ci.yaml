@@ -20,29 +20,17 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Setup Python with caching
+        uses: ./.github/actions/setup-python
         with:
           python-version: '3.8'
-          cache: 'pip'
-
-      - name: Cache pip dependencies
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-lint-${{ hashFiles('**/requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-lint-
-            ${{ runner.os }}-pip-
+          cache-key-suffix: 'lint'
 
       - name: Install lint dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install darker[isort]
+        run: pip install darker[isort]
 
       - name: Run darker
-        run: |
-          darker --check --diff --isort app/ tests/
+        run: darker --check --diff --isort app/ tests/
 
   audit:
     name: Security Audit
@@ -52,30 +40,18 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Setup Python with caching
+        uses: ./.github/actions/setup-python
         with:
           python-version: '3.8'
-          cache: 'pip'
-
-      - name: Cache pip dependencies
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-audit-${{ hashFiles('**/requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-audit-
-            ${{ runner.os }}-pip-
+          cache-key-suffix: 'audit'
 
       - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install pip-audit safety
+        run: pip install pip-audit
 
       - name: Run pip-audit
         continue-on-error: true
-        run: |
-          pip-audit --desc
+        run: pip-audit --desc
 
   test:
     name: Test Application
@@ -85,36 +61,26 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Setup Python with caching
+        uses: ./.github/actions/setup-python
         with:
           python-version: '3.8'
-          cache: 'pip'
-
-      - name: Cache pip dependencies
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-test-${{ hashFiles('**/requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-test-
-            ${{ runner.os }}-pip-
+          cache-key-suffix: 'test'
+          requirements-file: true
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install pytest pytest-cov httpx
+          pip install pytest
 
       - name: Run tests
-        run: |
-          pytest tests/ -v
+        run: pytest tests/ -v
 
   build-and-push:
     name: Build and Push to ECR
     environment: dev
     runs-on: ubuntu-latest
-    if: github.event_name == 'push'
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     needs: [lint, audit, test]
     permissions:
       contents: read
@@ -122,7 +88,7 @@ jobs:
     
     outputs:
       image-uri: ${{ steps.build-image.outputs.image }}
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -149,11 +115,9 @@ jobs:
           ECR_REPOSITORY: ${{ env.IMAGE_NAME }}
         run: |
           echo "Building Docker image..."
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
-          
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .          
           echo "Pushing image to ECR..."
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-          
           echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
           echo "✅ **Image pushed: $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> "$GITHUB_STEP_SUMMARY"
 
