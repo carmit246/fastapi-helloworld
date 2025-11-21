@@ -6,11 +6,11 @@
 replicaCount: 1
 image:
   # Image repository (ECR, Docker Hub, GHCR, etc.)
-  repository: PLACEHOLDER.dkr.ecr.eu-west-1.amazonaws.com/fastapi-helloworld
+  repository: 756446409310.dkr.ecr.eu-west-1.amazonaws.com/test1-app
   # Image pull policy
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion
-  tag: "1.0.0"
+  tag: "89cb25a30899341ac2b1513d6221fd6b161a661e"
 # Image pull secrets for private registries
 imagePullSecrets: []
 # - name: ecr-secret
