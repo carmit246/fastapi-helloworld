@@ -16,11 +16,18 @@ on:
         required: false
         type: string
         default: test1-app
+      deployment-type:
+        required: false
+        type: string
+        default: argocd
 
   workflow_dispatch:
     env:
       required: true
-      type: string 
+      type: choice
+      default: "dev"
+      options: 
+      - dev
     repository-uri:
       required: true
       type: string
@@ -31,6 +38,13 @@ on:
       required: false
       type: string
       default: test1-app
+    deployment-type:
+      required: false
+      type: choice
+      default: "argocd"
+      options: 
+      - argocd
+      - helm
 
 jobs:
   deploy:
@@ -41,38 +55,28 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+      - name: Deploy helm chart
+        if: ${{ inputs.deployment-type == 'helm' }}
+        uses: ./.github/actions/deploy-helm
         with:
+          env:  ${{ inputs.env }}
+          repository-uri: ${{ inputs.repository-uri }}
+          image-tag: ${{ inputs.image-tag }}
+          image-name: ${{ inputs.image-name}}
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
+          eks-cluster: ${{ secrets.EKS_CLUSTER_NAME }}
 
-      - name: Install kubectl
-        uses: azure/setup-kubectl@v4
+      - name: Deploy argocd application
+        if: ${{ inputs.deployment-type == 'argocd' }}
+        uses: ./.github/actions/deploy-argocd
         with:
-          version: 'latest'
-
-      - name: Update kubeconfig for EKS
-        run: |
-          aws eks update-kubeconfig \
-            --name ${{ secrets.EKS_CLUSTER_NAME }} \
-            --region ${{ secrets.AWS_REGION }}
-
-      - name: Deploy with Helm
-        run: |
-          helm upgrade --install helloworld ./helm/helloworld \
-            --namespace backend \
-            --create-namespace \
-            --set image.repository=${{ inputs.repository-uri }}/${{ inputs.image-name}} \
-            --set image.tag=${{ inputs.image-tag }} \
-            --wait \
-            --timeout 5m
-
-      - name: Verify deployment
-        run: |
-          helm status helloworld -n backend
-          kubectl get all -n backend -l app.kubernetes.io/instance=helloworld
+          env:  ${{ inputs.env }}
+          repository-uri: ${{ inputs.repository-uri }}
+          image-tag: ${{ inputs.image-tag }}
+          image-name: ${{ inputs.image-name}}
+          token: ${{ github.token }}
 
       - name: Summarize
         run: |
