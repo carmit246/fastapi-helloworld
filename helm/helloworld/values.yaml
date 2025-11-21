@@ -6,7 +6,7 @@
 replicaCount: 1
 image:
   # Image repository (ECR, Docker Hub, GHCR, etc.)
-  repository: YOUR_ACCOUNT_ID.dkr.ecr.eu-west-1.amazonaws.com/fastapi-helloworld
+  repository: PLACEHOLDER.dkr.ecr.eu-west-1.amazonaws.com/fastapi-helloworld
   # Image pull policy
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion

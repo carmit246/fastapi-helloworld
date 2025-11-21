@@ -41,5 +41,5 @@ Deploy the helm chart to dev cluster, use the newly created image
 Separate workflow to allow future deployment to additional envs (using github environments)
 
 Deployment-type variable:
-1. helm - ude ```helm install``` command
+1. helm - use ```helm install``` command
 2. argocd - update the image tag in the values file
