@@ -1,0 +1,87 @@
+name: 'Deploy backend application with ArgoCD'
+description: 'Deploy backend application with ArgoCD'
+
+inputs:
+  env:
+    description: 'environment'
+    required: true
+  repository-uri:
+    description: 'ECR repolisoty URI'
+    required: true
+  image-tag:
+    description: 'beckend application image tag'
+    required: true
+  image-name:
+    description: 'beckend application image name'
+    required: false
+    default: test1-app
+  token:
+    description: 'Github token'
+    required: true
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Configure Git
+      shell: bash
+      run: |
+        git config --global user.email "ci@backend.com"
+        git config --global user.name "ci"
+
+    - name: Set branch name
+      id: branch-name
+      shell: bash
+      run: |
+        BRANCH_NAME="release-${{ inputs.image-tag }}"
+        echo "branch_name=${BRANCH_NAME}" >> $GITHUB_OUTPUT
+        echo "Using branch name: ${BRANCH_NAME}" 
+    
+    - name: Create or checkout branch
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+      shell: bash
+      run: |
+        BRANCH_NAME="${{ steps.branch-name.outputs.branch_name }}"
+        if git show-ref --verify --quiet refs/heads/${BRANCH_NAME}; then
+          echo "Branch ${BRANCH_NAME} already exists, checking out..."
+          git checkout ${BRANCH_NAME}
+          git pull origin ${BRANCH_NAME} || true
+        else
+          echo "Creating new branch ${BRANCH_NAME}..."
+          git checkout -b ${BRANCH_NAME}
+        fi
+
+    - name: update-image-tag
+      id: update-image-tag
+      shell: bash
+      run: |
+        COMMAND1="yq e -i '.image.tag = \"${{ inputs.image-tag }}\"' helm/helloworld/values.yaml"
+        eval "$COMMAND1"
+        COMMAND2="yq e -i '.image.repository = \"${{ inputs.repository-uri }}\/${{ inputs.image-name }}\"' helm/helloworld/values.yaml"
+        eval "$COMMAND2"
+        echo "Helloworld image updated to ${{ inputs.repository-uri }}:${{ inputs.image-tag }}"
+
+    - name: push changes and open pull request
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+      shell: bash
+      run: |
+        git add helm/helloworld/values.yaml
+        title="Deploy helloworks image ${{ inputs.repository-uri }}:${{ inputs.image-tag }}"
+        git commit -m "Deploy helloworks image ${{ inputs.repository-uri }}:${{ inputs.image-tag }}"
+        git push --set-upstream origin ${{ steps.branch-name.outputs.branch_name }}
+        gh pr create --base main --head ${{ steps.branch-name.outputs.branch_name }} --title "$title" --body "$title"
+
+    - name: Merge PR
+      if: ${{ inputs.merge == 'true' }}
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+      shell: bash
+      run: |
+        WAIT_TIME=0
+        until [ $WAIT_TIME -eq 10 ] || gh pr merge --admin --delete-branch --squash ${{ inputs.image-tag }}; do
+          WAIT_TIME=$(( WAIT_TIME + 1 ))
+          sleep $WAIT_TIME
+        done
+        echo "Error: Failed to merge PR"
+        exit 1
