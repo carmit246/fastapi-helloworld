@@ -3,8 +3,15 @@ name: CI/CD Pipeline
 on:
   push:
     branches: [ main ]
+  
   pull_request:
     branches: [ main ]
+  
+  workflow_dispatch:
+    inputs:
+      image-tag:
+        required: true
+        type: string
 
 env:
   AWS_REGION: eu-west-1
@@ -108,12 +115,21 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
+      - name: Set image tag
+        id: set-image-tag
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "image-tag=${{ inputs.image-tag }}" >> $GITHUB_OUTPUT
+          else
+            echo "image-tag=${{ github.sha }}" >> $GITHUB_OUTPUT
+          fi
+          
       - name: Build, tag, and push image to Amazon ECR
         id: build-image
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          IMAGE_TAG: ${{ github.sha }}
           ECR_REPOSITORY: ${{ env.IMAGE_NAME }}
+          IMAGE_TAG: ${{ steps.set-image-tag.image-tag }}
         run: |
           echo "Building Docker image..."
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .          
@@ -130,4 +146,4 @@ jobs:
     with:
       env: dev
       repository-uri: ${{ needs.build-and-push.outputs.regitry-uri }}
-      image-tag: ${{ github.sha }}
+      image-tag: ${{ steps.set-image-tag.image-tag }}
