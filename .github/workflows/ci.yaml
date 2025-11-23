@@ -94,6 +94,7 @@ jobs:
       packages: write
     
     outputs:
+      image-tag: ${{ steps.set-image-tag.image-tag }}
       image-uri: ${{ steps.build-image.outputs.image }}
       regitry-uri: ${{ steps.login-ecr.outputs.registry }}
 
@@ -146,4 +147,4 @@ jobs:
     with:
       env: dev
       repository-uri: ${{ needs.build-and-push.outputs.regitry-uri }}
-      image-tag: ${{ steps.set-image-tag.image-tag }}
+      image-tag: ${{ needs.build-and-push.outputs.image-tag }}
