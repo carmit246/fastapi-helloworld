@@ -10,7 +10,7 @@ image:
   # Image pull policy
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion
-  tag: "9e87b8163ad243323a377b1c412dd3ca53bb21b9"
+  tag: "1d0709572eab37fbc6c016297ee07a03046e1d8c"
 # Image pull secrets for private registries
 imagePullSecrets: []
 # - name: ecr-secret
