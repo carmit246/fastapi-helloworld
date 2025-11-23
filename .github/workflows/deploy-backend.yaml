@@ -22,29 +22,30 @@ on:
         default: argocd
 
   workflow_dispatch:
-    env:
-      required: true
-      type: choice
-      default: "dev"
-      options: 
-      - dev
-    repository-uri:
-      required: true
-      type: string
-    image-tag:
-      required: true
-      type: string
-    image-name:
-      required: false
-      type: string
-      default: test1-app
-    deployment-type:
-      required: false
-      type: choice
-      default: "argocd"
-      options: 
-      - argocd
-      - helm
+    inputs:
+      env:
+        required: true 
+        type: choice
+        default: "dev"
+        options: 
+        - dev
+      repository-uri:
+        required: true
+        type: string
+      image-tag:
+        required: true
+        type: string
+      image-name:
+        required: false
+        type: string
+        default: test1-app
+      deployment-type:
+        required: false
+        type: choice
+        default: "argocd"
+        options: 
+        - argocd
+        - helm
 
 jobs:
   deploy:
