@@ -141,7 +141,6 @@ jobs:
 
   deploy:
     needs: build-and-push
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'    
     uses: carmit246/fastapi-helloworld/.github/workflows/deploy-backend.yaml@main
     secrets: inherit
     with:
